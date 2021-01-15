@@ -12,15 +12,19 @@ export type Device = {
   displayName: string;
 };
 
-async function getDevicesSerials(): Promise<string[]> {
-  const dbusInterface: DBusInterface = await new Promise((res, rej) => {
+async function getDBusInterface(interfaceName: string, serial: string | null = null): Promise<DBusInterface> {
+  return new Promise((res, rej) => {
     sessionBus.getInterface(
       'org.razer',
-      '/org/razer',
-      'razer.devices',
+      serial ? `/org/razer/device/${serial}` : '/org/razer',
+      interfaceName,
       (err, data) => err ? rej(err) : res(data),
     );
   });
+}
+
+async function getDevicesSerials(): Promise<string[]> {
+  const dbusInterface: DBusInterface = await getDBusInterface('razer.devices');
 
   return new Promise((res, rej) => {
     dbusInterface.getDevices((err, data) => err ? rej(err) : res(data));
@@ -28,13 +32,10 @@ async function getDevicesSerials(): Promise<string[]> {
 }
 
 async function getDeviceBySerial(serial: string): Promise<Device> {
-  const dbusInterface: DBusInterface = await new Promise((res, rej) => {
-    sessionBus.getInterface(
-      'org.razer',
-      `/org/razer/device/${serial}`,
-      'razer.device.misc',
-      (err, data) => err ? rej(err) : res(data),
-    );
+  const dbusInterface: DBusInterface = await getDBusInterface('razer.device.misc', serial);
+
+  const namePromise = new Promise<string>((res, rej) => {
+    dbusInterface.getDeviceName((err, data) => err ? rej(err) : res(data));
   });
 
   const typePromise = new Promise<string>((res, rej) => {
@@ -45,20 +46,60 @@ async function getDeviceBySerial(serial: string): Promise<Device> {
     dbusInterface.getVidPid((err, data) => err ? rej(err) : res(data));
   });
 
-  const [type, [vid, pid]] = await Promise.all([typePromise, vidPidPromise]);
+  const [
+    displayName,
+    type,
+    [vid, pid],
+  ] = await Promise.all([namePromise, typePromise, vidPidPromise]);
 
   return {
     type,
     vid,
     pid,
     serial,
-    displayName: `${type} ${serial}`,
+    displayName,
   };
 }
 
 export async function getAllDevices(): Promise<Device[]> {
   const serials = await getDevicesSerials();
   return Promise.all(serials.map(s => getDeviceBySerial(s)));
+}
+
+export async function setBrightness(device: Device, value: number): Promise<void> {
+  const dbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.brightness', device.serial);
+
+  return new Promise((res, rej) => {
+    dbusInterface.setBrightness(value, (err) => err ? rej(err) : res());
+  });
+}
+
+export async function getBrightness(device: Device): Promise<number> {
+  const dbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.brightness', device.serial);
+
+  return new Promise((res, rej) => {
+    dbusInterface.getBrightness((err, value) => err ? rej(err) : res(Number(value)));
+  });
+}
+
+export async function setOn(device: Device, value: boolean): Promise<void> {
+  const dbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.chroma', device.serial);
+
+  return new Promise((res, rej) => {
+    if (value) {
+      dbusInterface.setStatic(137, 35, 26, (err) => err ? rej(err) : res());
+    } else {
+      dbusInterface.setNone((err) => err ? rej(err) : res());
+    }
+  });
+}
+
+export async function getOn(device: Device): Promise<boolean> {
+  const dbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.chroma', device.serial);
+
+  return new Promise((res, rej) => {
+    dbusInterface.getEffect((err, value) => err ? rej(err) : res(value === 'static'));
+  });
 }
 
 
