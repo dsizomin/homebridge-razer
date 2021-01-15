@@ -6,4 +6,4 @@ export const PLATFORM_NAME = 'HomebridgeRazerPlugin';
 /**
  * This must match the name of your plugin as defined the package.json
  */
-export const PLUGIN_NAME = 'homebridge-razer';
+export const PLUGIN_NAME = '@dsizomin/homebridge-razer';
