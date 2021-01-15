@@ -70,11 +70,7 @@ export async function setBrightness(device: Device, value: number): Promise<void
   const brightnessDbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.brightness', device.serial);
   const chromaDbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.chroma', device.serial);
 
-  const brightnessPromise = new Promise((res, rej) => {
-    brightnessDbusInterface.setBrightness(value, (err) => err ? rej(err) : res());
-  });
-
-  const effectPromise = new Promise((res, rej) => {
+  await new Promise((res, rej) => {
     if (value) {
       chromaDbusInterface.setStatic(137, 35, 26, (err) => err ? rej(err) : res());
     } else {
@@ -82,7 +78,9 @@ export async function setBrightness(device: Device, value: number): Promise<void
     }
   });
 
-  await Promise.all([brightnessPromise, effectPromise]);
+  await new Promise((res, rej) => {
+    brightnessDbusInterface.setBrightness(value, (err) => err ? rej(err) : res());
+  });
 }
 
 export async function getBrightness(device: Device): Promise<number> {
