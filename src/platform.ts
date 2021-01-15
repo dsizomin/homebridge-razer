@@ -5,7 +5,7 @@ import { ExamplePlatformAccessory } from './platformAccessory';
 
 import {
   getAllDevices,
-  Device
+  Device,
 } from './dbus';
 
 /**
