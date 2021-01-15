@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "HomebridgeRazer",
   "pluginType": "platform",
   "singular": true,
   "schema": {
