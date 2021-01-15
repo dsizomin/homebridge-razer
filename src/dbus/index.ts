@@ -1,21 +1,19 @@
 import { getBus } from 'dbus';
 
-import type { DBusInterface, AnyInterfaceMethod } from 'dbus';
+import type { DBusConnection, DBusInterface } from 'dbus';
 
-const sessionBus = getBus('session');
+const sessionBus: DBusConnection = getBus('session');
 
-export type PrimaryDBusInterface = DBusInterface<AnyInterfaceMethod>;
-export type DeviceDBusInterface = DBusInterface<AnyInterfaceMethod>;
-
-export type DeviceDescriptor = {
+export type Device = {
+  serial: string;
   type: string;
   vid: string;
   pid: string;
+  displayName: string;
 };
 
-// TODO type it better
-export function getPrimaryInterface(): Promise<PrimaryDBusInterface> {
-  return new Promise((res, rej) => {
+async function getDevicesSerials(): Promise<string[]> {
+  const dbusInterface: DBusInterface = await new Promise((res, rej) => {
     sessionBus.getInterface(
       'org.razer',
       '/org/razer',
@@ -23,16 +21,14 @@ export function getPrimaryInterface(): Promise<PrimaryDBusInterface> {
       (err, data) => err ? rej(err) : res(data),
     );
   });
-}
 
-export function getDevices(dbusInterface: PrimaryDBusInterface): Promise<string[]> {
   return new Promise((res, rej) => {
     dbusInterface.getDevices((err, data) => err ? rej(err) : res(data));
   });
 }
 
-export function getDeviceInterface(serial: string): Promise<DeviceDBusInterface> {
-  return new Promise((res, rej) => {
+async function getDeviceBySerial(serial: string): Promise<Device> {
+  const dbusInterface: DBusInterface = await new Promise((res, rej) => {
     sessionBus.getInterface(
       'org.razer',
       `/org/razer/device/${serial}`,
@@ -40,9 +36,7 @@ export function getDeviceInterface(serial: string): Promise<DeviceDBusInterface>
       (err, data) => err ? rej(err) : res(data),
     );
   });
-}
 
-export function getDeviceDescriptor(dbusInterface: DeviceDBusInterface): Promise<DeviceDescriptor> {
   const typePromise = new Promise<string>((res, rej) => {
     dbusInterface.getDeviceType((err, data) => err ? rej(err) : res(data));
   });
@@ -51,12 +45,20 @@ export function getDeviceDescriptor(dbusInterface: DeviceDBusInterface): Promise
     dbusInterface.getVidPid((err, data) => err ? rej(err) : res(data));
   });
 
-  return Promise.all([typePromise, vidPidPromise])
-    .then(([type, [vid, pid]]) => ({
-      type,
-      vid,
-      pid,
-    }));
+  const [type, [vid, pid]] = await Promise.all([typePromise, vidPidPromise]);
+
+  return {
+    type,
+    vid,
+    pid,
+    serial,
+    displayName: `${type} ${serial}`,
+  };
+}
+
+export async function getAllDevices(): Promise<Device[]> {
+  const serials = await getDevicesSerials();
+  return Promise.all(serials.map(s => getDeviceBySerial(s)));
 }
 
 

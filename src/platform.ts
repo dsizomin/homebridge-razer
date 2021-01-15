@@ -4,11 +4,8 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { ExamplePlatformAccessory } from './platformAccessory';
 
 import {
-  getPrimaryInterface,
-  getDevices,
-  getDeviceInterface,
-  getDeviceDescriptor,
-  PrimaryDBusInterface, DeviceDescriptor,
+  getAllDevices,
+  Device
 } from './dbus';
 
 /**
@@ -59,46 +56,15 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
    */
   async discoverDevices() {
 
-    const dbusInterface: PrimaryDBusInterface = await getPrimaryInterface();
-    const devicesSerials: string[] = await getDevices(dbusInterface);
-
-    const devices: {
-      [serial: string]: DeviceDescriptor;
-    } = {};
-
-    await Promise.all(devicesSerials.map(serial => {
-      return getDeviceInterface(serial)
-        .then(i => getDeviceDescriptor(i))
-        .then(d => devices[serial] = d);
-    }));
-
-    // const devicesInterfaces = await Promise.all(devicesSerials.map(serial => {
-    //   return getDeviceInterface(serial).then
-    // }));
-    //
-    // const deviceDesriptors = await Promise.all(devicesSerials)
-
-    // EXAMPLE ONLY
-    // A real plugin you would discover accessories from the local network, cloud services
-    // or a user-defined array in the platform config.
-    // const exampleDevices = [
-    //   {
-    //     exampleUniqueId: 'ABCD',
-    //     exampleDisplayName: 'Bedroom',
-    //   },
-    //   {
-    //     exampleUniqueId: 'EFGH',
-    //     exampleDisplayName: 'Kitchen',
-    //   },
-    // ];
+    const devices: Device[] = await getAllDevices();
 
     // loop over the discovered devices and register each one if it has not already been registered
-    for (const serial of devicesSerials) {
+    for (const device of devices) {
 
       // generate a unique id for the accessory this should be generated from
       // something globally unique, but constant, for example, the device serial
       // number or MAC address
-      const uuid = this.api.hap.uuid.generate(serial);
+      const uuid = this.api.hap.uuid.generate(device.serial);
 
       // see if an accessory with the same uuid has already been registered and restored from
       // the cached devices we stored in the `configureAccessory` method above
@@ -106,7 +72,7 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
 
       if (existingAccessory) {
         // the accessory already exists
-        if (serial) {
+        if (device.serial) {
           this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
 
           // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
@@ -119,25 +85,22 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
           
           // update accessory cache with any changes to the accessory details and information
           this.api.updatePlatformAccessories([existingAccessory]);
-        } else if (!serial) {
+        } else if (!device.serial) {
           // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
           // remove platform accessories when no longer present
           this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
           this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
         }
       } else {
-        const descriptor = devices[serial];
-        const displayName = `${descriptor.type} ${serial}`;
-
         // the accessory does not yet exist, so we need to create it
-        this.log.info('Adding new accessory:', displayName);
+        this.log.info('Adding new accessory:', device.displayName);
 
         // create a new accessory
-        const accessory = new this.api.platformAccessory(displayName, uuid);
+        const accessory = new this.api.platformAccessory(device.displayName, uuid);
 
         // store a copy of the device object in the `accessory.context`
         // the `context` property can be used to store any data about the accessory you may need
-        accessory.context.device = descriptor;
+        accessory.context.device = device;
 
         // create the accessory handler for the newly create accessory
         // this is imported from `platformAccessory.ts`
