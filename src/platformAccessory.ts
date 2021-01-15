@@ -50,7 +50,7 @@ export class ExamplePlatformAccessory {
    */
   setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
 
-    setOn(this.accessory.context.device.serial, Boolean(value))
+    setOn(this.accessory.context.device, Boolean(value))
       .then(() => {
         this.platform.log.debug('Set Characteristic On ->', value);
         callback();
@@ -72,7 +72,7 @@ export class ExamplePlatformAccessory {
    * this.service.updateCharacteristic(this.platform.Characteristic.On, true)
    */
   getOn(callback: CharacteristicGetCallback) {
-    getOn(this.accessory.context.device.serial)
+    getOn(this.accessory.context.device)
       .then(value => {
         this.platform.log.debug('Get Characteristic On ->', value);
         callback(null, value);
@@ -81,7 +81,7 @@ export class ExamplePlatformAccessory {
   }
 
   getBrightness(callback: CharacteristicGetCallback) {
-    getBrightness(this.accessory.context.device.serial)
+    getBrightness(this.accessory.context.device)
       .then(value => {
         this.platform.log.debug('Get Characteristic Brightness ->', value);
         callback(null, value);
@@ -95,7 +95,7 @@ export class ExamplePlatformAccessory {
    */
   setBrightness(value: CharacteristicValue, callback: CharacteristicSetCallback) {
 
-    setBrightness(this.accessory.context.device.serial, Number(value))
+    setBrightness(this.accessory.context.device, Number(value))
       .then((value) => {
         this.platform.log.debug('Set Characteristic Brightness -> ', value);
         callback(null);
