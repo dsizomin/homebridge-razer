@@ -1,7 +1,7 @@
 import {Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback} from 'homebridge';
 
 import {HomebridgeRazerPlugin} from './platform';
-import {getBrightness, getHue, getOn, getSaturation, setBrightness, setHue, setOn, setSaturation} from './dbus';
+import {getBrightness, getOn, setBrightness, setOn} from './dbus';
 
 /**
  * Platform Accessory
@@ -42,16 +42,6 @@ export class ExamplePlatformAccessory {
     this.service.getCharacteristic(this.platform.Characteristic.Brightness)
       .on('set', this.setBrightness.bind(this))        // SET - bind to the 'setBrightness` method below
       .on('get', this.getBrightness.bind(this));       // GET - bind to the 'setBrightness` method below
-
-    // register handlers for the Hue Characteristic
-    this.service.getCharacteristic(this.platform.Characteristic.Hue)
-      .on('set', this.setHue.bind(this))        // SET - bind to the 'setBrightness` method below
-      .on('get', this.getHue.bind(this));       // GET - bind to the 'setBrightness` method below
-
-    // register handlers for the Brightness Saturation
-    this.service.getCharacteristic(this.platform.Characteristic.Saturation)
-      .on('set', this.setSaturation.bind(this))        // SET - bind to the 'setBrightness` method below
-      .on('get', this.getSaturation.bind(this));       // GET - bind to the 'setBrightness` method below
   }
 
   /**
@@ -112,43 +102,4 @@ export class ExamplePlatformAccessory {
       })
       .catch(err => callback(err));
   }
-
-  getHue(callback: CharacteristicGetCallback) {
-    getHue(this.accessory.context.device)
-      .then(value => {
-        this.platform.log.debug('Get Characteristic Hue ->', value);
-        callback(null, value);
-      })
-      .catch(err => callback(err));
-  }
-
-  setHue(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-
-    setHue(this.accessory.context.device, Number(value))
-      .then((value) => {
-        this.platform.log.debug('Set Characteristic Hue -> ', value);
-        callback(null);
-      })
-      .catch(err => callback(err));
-  }
-
-  getSaturation(callback: CharacteristicGetCallback) {
-    getSaturation(this.accessory.context.device)
-      .then(value => {
-        this.platform.log.debug('Get Characteristic Saturation ->', value);
-        callback(null, value);
-      })
-      .catch(err => callback(err));
-  }
-
-  setSaturation(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-
-    setSaturation(this.accessory.context.device, Number(value))
-      .then((value) => {
-        this.platform.log.debug('Set Characteristic Saturation -> ', value);
-        callback(null);
-      })
-      .catch(err => callback(err));
-  }
-
 }
