@@ -83,23 +83,12 @@ export async function getBrightness(device: Device): Promise<number> {
 }
 
 export async function setOn(device: Device, value: boolean): Promise<void> {
-  const dbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.chroma', device.serial);
-
-  return new Promise((res, rej) => {
-    if (value) {
-      dbusInterface.setStatic(137, 35, 26, (err) => err ? rej(err) : res());
-    } else {
-      dbusInterface.setNone((err) => err ? rej(err) : res());
-    }
-  });
+  return setBrightness(device, value ? 100 : 0);
 }
 
 export async function getOn(device: Device): Promise<boolean> {
-  const dbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.chroma', device.serial);
-
-  return new Promise((res, rej) => {
-    dbusInterface.getEffect((err, value) => err ? rej(err) : res(value === 'static'));
-  });
+  const brightness = await getBrightness(device);
+  return Boolean(brightness);
 }
 
 
