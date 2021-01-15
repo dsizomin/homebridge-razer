@@ -69,9 +69,19 @@ export async function getAllDevices(): Promise<Device[]> {
 export async function setBrightness(device: Device, value: number): Promise<void> {
   const dbusInterface: DBusInterface = await getDBusInterface('razer.device.lighting.brightness', device.serial);
 
-  return new Promise((res, rej) => {
+  const brightnessPromise = new Promise((res, rej) => {
     dbusInterface.setBrightness(value, (err) => err ? rej(err) : res());
   });
+
+  const effectPromise = new Promise((res, rej) => {
+    if (value) {
+      dbusInterface.setStatic(137, 35, 26, (err) => err ? rej(err) : res());
+    } else {
+      dbusInterface.setNone((err) => err ? rej(err) : res());
+    }
+  });
+
+  await Promise.all([brightnessPromise, effectPromise]);
 }
 
 export async function getBrightness(device: Device): Promise<number> {
