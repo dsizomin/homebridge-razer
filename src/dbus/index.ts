@@ -83,7 +83,12 @@ export async function getBrightness(device: Device): Promise<number> {
 }
 
 export async function setOn(device: Device, value: boolean): Promise<void> {
-  return setBrightness(device, value ? 100 : 0);
+  const brightness = await getBrightness(device);
+  if (value && brightness === 0) {
+    return setBrightness(device, 100);
+  } else if (!value && brightness > 0) {
+    return setBrightness(device, 0);
+  }
 }
 
 export async function getOn(device: Device): Promise<boolean> {

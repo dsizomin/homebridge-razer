@@ -96,7 +96,7 @@ export class ExamplePlatformAccessory {
   setBrightness(value: CharacteristicValue, callback: CharacteristicSetCallback) {
 
     setBrightness(this.accessory.context.device, Number(value))
-      .then((value) => {
+      .then(() => {
         this.platform.log.debug('Set Characteristic Brightness -> ', value);
         callback(null);
       })
