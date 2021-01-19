@@ -1,7 +1,8 @@
 import {Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback} from 'homebridge';
 
 import {HomebridgeRazerPlugin} from './platform';
-import {getBrightness, getOn, setBrightness, setOn} from './dbus';
+import {MessageBus} from 'dbus-next';
+import {DeviceDBusClient} from './dbus';
 
 /**
  * Platform Accessory
@@ -11,10 +12,15 @@ import {getBrightness, getOn, setBrightness, setOn} from './dbus';
 export class ExamplePlatformAccessory {
   private service: Service;
 
+  private readonly dbusClient: DeviceDBusClient;
+
   constructor(
     private readonly platform: HomebridgeRazerPlugin,
     private readonly accessory: PlatformAccessory,
+    private readonly dbus: MessageBus,
   ) {
+
+    this.dbusClient = new DeviceDBusClient(dbus, accessory.context.device.serial);
 
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -50,7 +56,7 @@ export class ExamplePlatformAccessory {
    */
   setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
 
-    setOn(this.accessory.context.device, Boolean(value))
+    this.dbusClient.setOn(Boolean(value))
       .then(() => {
         this.platform.log.debug('Set Characteristic On ->', value);
         callback();
@@ -72,7 +78,7 @@ export class ExamplePlatformAccessory {
    * this.service.updateCharacteristic(this.platform.Characteristic.On, true)
    */
   getOn(callback: CharacteristicGetCallback) {
-    getOn(this.accessory.context.device)
+    this.dbusClient.getOn()
       .then(value => {
         this.platform.log.debug('Get Characteristic On ->', value);
         callback(null, value);
@@ -81,7 +87,7 @@ export class ExamplePlatformAccessory {
   }
 
   getBrightness(callback: CharacteristicGetCallback) {
-    getBrightness(this.accessory.context.device)
+    this.dbusClient.getBrightness()
       .then(value => {
         this.platform.log.debug('Get Characteristic Brightness ->', value);
         callback(null, value);
@@ -94,8 +100,7 @@ export class ExamplePlatformAccessory {
    * These are sent when the user changes the state of an accessory, for example, changing the Brightness
    */
   setBrightness(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-
-    setBrightness(this.accessory.context.device, Number(value))
+    this.dbusClient.setBrightness(Number(value))
       .then(() => {
         this.platform.log.debug('Set Characteristic Brightness -> ', value);
         callback(null);

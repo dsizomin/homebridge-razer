@@ -1,12 +1,11 @@
-import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
+import {API, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service} from 'homebridge';
 
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { ExamplePlatformAccessory } from './platformAccessory';
+import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
+import {ExamplePlatformAccessory} from './platformAccessory';
 
-import {
-  getAllDevices,
-  Device,
-} from './dbus';
+import {CommonDBusClient} from './dbus';
+import DBus, {MessageBus} from 'dbus-next';
+import {Device} from './dbus/types';
 
 /**
  * HomebridgePlatform
@@ -20,12 +19,21 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
 
+  private readonly dbus: MessageBus;
+  private readonly dbusClient: CommonDBusClient;
+
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
+
+    const busAddress = this.config.dbusAddress as string;
+
+    this.log.debug('Connecting to DBus at ->', busAddress);
+    this.dbus = DBus.sessionBus({ busAddress });
+    this.dbusClient = new CommonDBusClient(this.dbus);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -58,7 +66,7 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
    */
   async discoverDevices() {
 
-    const devices: Device[] = await getAllDevices();
+    const devices: Device[] = await this.dbusClient.getAllDevices();
 
     // loop over the discovered devices and register each one if it has not already been registered
     for (const device of devices) {
@@ -83,7 +91,7 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
 
           // create the accessory handler for the restored accessory
           // this is imported from `platformAccessory.ts`
-          new ExamplePlatformAccessory(this, existingAccessory);
+          new ExamplePlatformAccessory(this, existingAccessory, this.dbus);
           
           // update accessory cache with any changes to the accessory details and information
           this.api.updatePlatformAccessories([existingAccessory]);
@@ -106,7 +114,7 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
 
         // create the accessory handler for the newly create accessory
         // this is imported from `platformAccessory.ts`
-        new ExamplePlatformAccessory(this, accessory);
+        new ExamplePlatformAccessory(this, accessory, this.dbus);
 
         // link the accessory to your platform
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
