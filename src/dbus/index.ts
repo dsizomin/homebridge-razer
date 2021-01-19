@@ -2,8 +2,6 @@ import { getBus } from 'dbus';
 
 import type { DBusConnection, DBusInterface } from 'dbus';
 
-const sessionBus: DBusConnection = getBus('session');
-
 export type Device = {
   serial: string;
   type: string;
@@ -13,6 +11,9 @@ export type Device = {
 };
 
 async function getDBusInterface(interfaceName: string, serial: string | null = null): Promise<DBusInterface> {
+
+  const sessionBus: DBusConnection = getBus('session');
+
   return new Promise((res, rej) => {
     sessionBus.getInterface(
       'org.razer',
