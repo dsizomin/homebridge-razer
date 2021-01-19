@@ -12,15 +12,11 @@ import {DeviceDBusClient} from './dbus';
 export class ExamplePlatformAccessory {
   private service: Service;
 
-  private readonly dbusClient: DeviceDBusClient;
-
   constructor(
     private readonly platform: HomebridgeRazerPlugin,
     private readonly accessory: PlatformAccessory,
-    private readonly dbus: MessageBus,
+    private readonly dbusClient: DeviceDBusClient,
   ) {
-
-    this.dbusClient = new DeviceDBusClient(dbus, accessory.context.device.serial);
 
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!

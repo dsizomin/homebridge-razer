@@ -5,9 +5,31 @@ import {Device} from './types';
 export class DeviceDBusClient extends DBusClient{
   constructor(
     dbus: MessageBus,
-    private readonly device: Device,
+    private readonly serial: string,
   ) {
     super(dbus);
+  }
+
+  async getDevice(): Promise<Device> {
+    const dbusInterface = await this.getInterface('razer.device.misc');
+
+    const namePromise = dbusInterface.getDeviceName();
+    const typePromise = dbusInterface.getDeviceType();
+    const vidPidPromise = dbusInterface.getVidPid();
+
+    const [
+      displayName,
+      type,
+      [vid, pid],
+    ] = await Promise.all([namePromise, typePromise, vidPidPromise]);
+
+    return {
+      type,
+      vid,
+      pid,
+      displayName,
+      serial: this.serial,
+    };
   }
 
   async setBrightness(value: number): Promise<void> {
@@ -35,6 +57,6 @@ export class DeviceDBusClient extends DBusClient{
   }
 
   protected getProxyObject(): Promise<ProxyObject> {
-    return this.dbus.getProxyObject('org.razer', `/org/razer/device/${this.device.serial}`);
+    return this.dbus.getProxyObject('org.razer', `/org/razer/device/${this.serial}`);
   }
 }
