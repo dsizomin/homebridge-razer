@@ -15,7 +15,7 @@ export class CommonDBusClient extends DBusClient{
   }
 
   private async getDeviceBySerial(serial: string): Promise<Device> {
-    const dbusInterface = await this.getInterface('razer.devices.misc');
+    const dbusInterface = await this.getInterface('razer.device.misc');
 
     const namePromise = new Promise<string>((res, rej) => {
       dbusInterface.getDeviceName((err, data) => err ? rej(err) : res(data));
