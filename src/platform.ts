@@ -34,7 +34,9 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
       // run the method to discover / register your devices as accessories
-      this.discoverDevices();
+      this.discoverDevices().catch(err => {
+        log.error('Failed to discover devices ->', err);
+      });
     });
   }
 
