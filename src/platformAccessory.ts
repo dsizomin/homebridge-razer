@@ -66,7 +66,7 @@ export class ExamplePlatformAccessory {
     const booleanValue = Boolean(value);
     const originalDeviceOn = booleanValue;
 
-    this.isDeviceOn = originalDeviceOn;
+    this.isDeviceOn = booleanValue;
 
     this.dbusClient.setColor(booleanValue ? color.hsl.rgb([
       this.deviceHue,
