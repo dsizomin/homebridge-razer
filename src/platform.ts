@@ -29,10 +29,8 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
 
-    const busAddress = this.config.dbusAddress as string;
-
-    this.log.debug('Connecting to DBus at ->', busAddress);
-    this.dbus = DBus.sessionBus({ busAddress });
+    this.log.debug('Connecting to DBus at ->', process.env.DBUS_SESSION_BUS_ADDRESS);
+    this.dbus = DBus.sessionBus();
     this.dbusClient = new CommonDBusClient(this.dbus);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
