@@ -10,12 +10,6 @@
         "type": "string",
         "required": true,
         "default": "Homebridge Razer"
-      },
-      "dbusAddress": {
-        "title": "DBus address",
-        "type": "string",
-        "required": true,
-        "default": ""
       }
     }
   }
