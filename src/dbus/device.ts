@@ -1,6 +1,7 @@
 import {MessageBus, ProxyObject} from 'dbus-next';
 import {DBusClient} from './base';
 import {Device} from './types';
+import {RGB} from 'color-convert/conversions';
 
 export class DeviceDBusClient extends DBusClient{
   constructor(
@@ -48,6 +49,15 @@ export class DeviceDBusClient extends DBusClient{
       return this.setBrightness(100);
     } else if (!value && brightness > 0) {
       return this.setBrightness(0);
+    }
+  }
+
+  async setColor(value: RGB | null): Promise<void> {
+    const dbusInterface = await this.getInterface('razer.device.lighting.chroma');
+    if (value) {
+      return dbusInterface.setStatic(...value);
+    } else {
+      return dbusInterface.setNone();
     }
   }
 

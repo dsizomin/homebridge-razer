@@ -1,8 +1,10 @@
-import {Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback} from 'homebridge';
+import {CharacteristicGetCallback, CharacteristicSetCallback, CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
 
 import {HomebridgeRazerPlugin} from './platform';
-import {MessageBus} from 'dbus-next';
 import {DeviceDBusClient} from './dbus';
+import color from 'color-convert';
+
+const DefaultHSLLightLevel = 50;
 
 /**
  * Platform Accessory
@@ -11,6 +13,11 @@ import {DeviceDBusClient} from './dbus';
  */
 export class ExamplePlatformAccessory {
   private service: Service;
+
+  private isDeviceOn = false;
+
+  private deviceHue = 0;
+  private deviceSaturation = 0;
 
   constructor(
     private readonly platform: HomebridgeRazerPlugin,
@@ -37,49 +44,48 @@ export class ExamplePlatformAccessory {
 
     // register handlers for the On/Off Characteristic
     this.service.getCharacteristic(this.platform.Characteristic.On)
-      .on('set', this.setOn.bind(this))                // SET - bind to the `setOn` method below
-      .on('get', this.getOn.bind(this));               // GET - bind to the `getOn` method below
+      .on('set', this.setOn.bind(this))
+      .on('get', this.getOn.bind(this));
 
     // register handlers for the Brightness Characteristic
     this.service.getCharacteristic(this.platform.Characteristic.Brightness)
-      .on('set', this.setBrightness.bind(this))        // SET - bind to the 'setBrightness` method below
-      .on('get', this.getBrightness.bind(this));       // GET - bind to the 'setBrightness` method below
+      .on('set', this.setBrightness.bind(this))
+      .on('get', this.getBrightness.bind(this));
+
+    this.service.getCharacteristic(this.platform.Characteristic.Hue)
+      .on('set', this.setHue.bind(this))
+      .on('get', this.getHue.bind(this));
+
+    this.service.getCharacteristic(this.platform.Characteristic.Saturation)
+      .on('set', this.setSaturation.bind(this))
+      .on('get', this.getSaturation.bind(this));
   }
 
-  /**
-   * Handle "SET" requests from HomeKit
-   * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
-   */
   setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
 
-    this.dbusClient.setOn(Boolean(value))
+    const booleanValue = Boolean(value);
+    const originalDeviceOn = booleanValue;
+
+    this.isDeviceOn = originalDeviceOn;
+
+    this.dbusClient.setColor(booleanValue ? color.hsl.rgb([
+      this.deviceHue,
+      this.deviceSaturation,
+      DefaultHSLLightLevel,
+    ]) : null)
       .then(() => {
         this.platform.log.debug('Set Characteristic On ->', value);
         callback();
       })
-      .catch(err => callback(err));
+      .catch(err => {
+        this.isDeviceOn = originalDeviceOn;
+        callback(err);
+      });
   }
 
-  /**
-   * Handle the "GET" requests from HomeKit
-   * These are sent when HomeKit wants to know the current state of the accessory, for example, checking if a Light bulb is on.
-   *
-   * GET requests should return as fast as possbile. A long delay here will result in
-   * HomeKit being unresponsive and a bad user experience in general.
-   *
-   * If your device takes time to respond you should update the status of your device
-   * asynchronously instead using the `updateCharacteristic` method instead.
-
-   * @example
-   * this.service.updateCharacteristic(this.platform.Characteristic.On, true)
-   */
   getOn(callback: CharacteristicGetCallback) {
-    this.dbusClient.getOn()
-      .then(value => {
-        this.platform.log.debug('Get Characteristic On ->', value);
-        callback(null, value);
-      })
-      .catch(err => callback(err));
+    this.platform.log.debug('Get Characteristic On -> ', this.isDeviceOn);
+    callback(null, this.isDeviceOn);
   }
 
   getBrightness(callback: CharacteristicGetCallback) {
@@ -91,10 +97,6 @@ export class ExamplePlatformAccessory {
       .catch(err => callback(err));
   }
 
-  /**
-   * Handle "SET" requests from HomeKit
-   * These are sent when the user changes the state of an accessory, for example, changing the Brightness
-   */
   setBrightness(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     this.dbusClient.setBrightness(Number(value))
       .then(() => {
@@ -102,5 +104,59 @@ export class ExamplePlatformAccessory {
         callback(null);
       })
       .catch(err => callback(err));
+  }
+
+  getHue(callback: CharacteristicGetCallback) {
+    this.platform.log.debug('Get Characteristic Hue -> ', this.deviceHue);
+    callback(null, this.deviceHue);
+  }
+
+  setHue(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    const numberValue = Number(value);
+    const originalHue = this.deviceHue;
+
+    this.deviceHue = numberValue;
+    const newRGB = color.hsl.rgb([
+      numberValue,
+      this.deviceSaturation,
+      DefaultHSLLightLevel,
+    ]);
+
+    this.dbusClient.setColor(newRGB)
+      .then(() => {
+        this.platform.log.debug('Set Characteristic Hue -> ', value);
+        callback(null);
+      })
+      .catch(err => {
+        this.deviceHue = originalHue;
+        callback(err);
+      });
+  }
+
+  getSaturation(callback: CharacteristicGetCallback) {
+    this.platform.log.debug('Get Characteristic Saturation -> ', this.deviceSaturation);
+    callback(null, this.deviceSaturation);
+  }
+
+  setSaturation(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    const numberValue = Number(value);
+
+    const originalSaturation = this.deviceSaturation;
+
+    const newRGB = color.hsl.rgb([
+      this.deviceHue,
+      numberValue,
+      DefaultHSLLightLevel,
+    ]);
+
+    this.dbusClient.setColor(newRGB)
+      .then(() => {
+        this.platform.log.debug('Set Characteristic Saturation -> ', value);
+        callback(null);
+      })
+      .catch(err => {
+        this.deviceSaturation = originalSaturation;
+        callback(err);
+      });
   }
 }

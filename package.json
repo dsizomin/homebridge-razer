@@ -27,6 +27,7 @@
     "homebridge-plugin"
   ],
   "dependencies": {
+    "color-convert": "^2.0.1",
     "dbus-next": "^0.9.1"
   },
   "devDependencies": {
