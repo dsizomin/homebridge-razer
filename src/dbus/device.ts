@@ -52,13 +52,9 @@ export class DeviceDBusClient extends DBusClient{
     }
   }
 
-  async setColor(value: RGB | null): Promise<void> {
+  async setColor(value: RGB): Promise<void> {
     const dbusInterface = await this.getInterface('razer.device.lighting.chroma');
-    if (value) {
-      return dbusInterface.setStatic(...value);
-    } else {
-      return dbusInterface.setNone();
-    }
+    return dbusInterface.setStatic(...value);
   }
 
   async getOn(): Promise<boolean> {

@@ -3,6 +3,7 @@ import {CharacteristicGetCallback, CharacteristicSetCallback, CharacteristicValu
 import {HomebridgeRazerPlugin} from './platform';
 import {DeviceDBusClient} from './dbus';
 import color from 'color-convert';
+import {HSL} from 'color-convert/conversions';
 
 const DefaultHSLLightLevel = 50;
 
@@ -15,9 +16,9 @@ export class ExamplePlatformAccessory {
   private service: Service;
 
   private isDeviceOn = false;
-
   private deviceHue = 0;
   private deviceSaturation = 0;
+  private deviceBrightness = 0;
 
   constructor(
     private readonly platform: HomebridgeRazerPlugin,
@@ -64,21 +65,28 @@ export class ExamplePlatformAccessory {
   setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
 
     const booleanValue = Boolean(value);
+    const brightnessToSet = booleanValue ? (this.deviceBrightness || 100) : 0;
+
     const originalDeviceOn = booleanValue;
+    const originalBrightness = this.deviceBrightness;
 
     this.isDeviceOn = booleanValue;
+    this.deviceBrightness = brightnessToSet;
 
-    this.dbusClient.setColor(booleanValue ? color.hsl.rgb([
-      this.deviceHue,
-      this.deviceSaturation,
-      DefaultHSLLightLevel,
-    ]) : null)
+    this.dbusClient.setBrightness(brightnessToSet)
       .then(() => {
+
+        this.service.updateCharacteristic(
+          this.platform.Characteristic.Brightness,
+          brightnessToSet,
+        );
+
         this.platform.log.debug('Set Characteristic On ->', value);
         callback();
       })
       .catch(err => {
         this.isDeviceOn = originalDeviceOn;
+        this.deviceBrightness = originalBrightness;
         callback(err);
       });
   }
@@ -89,21 +97,36 @@ export class ExamplePlatformAccessory {
   }
 
   getBrightness(callback: CharacteristicGetCallback) {
-    this.dbusClient.getBrightness()
-      .then(value => {
-        this.platform.log.debug('Get Characteristic Brightness ->', value);
-        callback(null, value);
-      })
-      .catch(err => callback(err));
+    this.platform.log.debug('Get Characteristic Brightness ->', this.deviceBrightness);
+    callback(null, this.deviceBrightness);
   }
 
   setBrightness(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-    this.dbusClient.setBrightness(Number(value))
+
+    const numberValue = Number(value);
+    const booleanValue = Boolean(value);
+
+    const originalBrightness = this.deviceHue;
+    const originalIsOn = this.isDeviceOn;
+
+    this.deviceBrightness = numberValue;
+    this.isDeviceOn = booleanValue;
+
+    this.platform.log.debug('Set Characteristic Brightness -> ', numberValue);
+
+    this.dbusClient.setBrightness(numberValue)
       .then(() => {
-        this.platform.log.debug('Set Characteristic Brightness -> ', value);
+        this.service.updateCharacteristic(
+          this.platform.Characteristic.On,
+          booleanValue,
+        );
         callback(null);
       })
-      .catch(err => callback(err));
+      .catch(err => {
+        this.deviceBrightness = originalBrightness;
+        this.isDeviceOn = originalIsOn;
+        callback(err);
+      });
   }
 
   getHue(callback: CharacteristicGetCallback) {
@@ -113,18 +136,23 @@ export class ExamplePlatformAccessory {
 
   setHue(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     const numberValue = Number(value);
-    const originalHue = this.deviceHue;
+    this.platform.log.debug('Set Characteristic Hue -> ', numberValue);
 
+    const originalHue = this.deviceHue;
     this.deviceHue = numberValue;
-    const newRGB = color.hsl.rgb([
+
+    const newHSL: HSL = [
       numberValue,
       this.deviceSaturation,
       DefaultHSLLightLevel,
-    ]);
+    ];
+    this.platform.log.debug('Set resulting HSL -> ', newHSL);
+
+    const newRGB = color.hsl.rgb(newHSL);
+    this.platform.log.debug('Set resulting RGB -> ', newRGB);
 
     this.dbusClient.setColor(newRGB)
       .then(() => {
-        this.platform.log.debug('Set Characteristic Hue -> ', value);
         callback(null);
       })
       .catch(err => {
@@ -140,18 +168,23 @@ export class ExamplePlatformAccessory {
 
   setSaturation(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     const numberValue = Number(value);
+    this.platform.log.debug('Set Characteristic Saturation -> ', numberValue);
 
     const originalSaturation = this.deviceSaturation;
+    this.deviceSaturation = numberValue;
 
-    const newRGB = color.hsl.rgb([
+    const newHSL: HSL = [
       this.deviceHue,
       numberValue,
       DefaultHSLLightLevel,
-    ]);
+    ];
+    this.platform.log.debug('Set resulting HSL -> ', newHSL);
+
+    const newRGB = color.hsl.rgb(newHSL);
+    this.platform.log.debug('Set resulting RGB -> ', newRGB);
 
     this.dbusClient.setColor(newRGB)
       .then(() => {
-        this.platform.log.debug('Set Characteristic Saturation -> ', value);
         callback(null);
       })
       .catch(err => {
