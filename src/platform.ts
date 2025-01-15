@@ -5,7 +5,6 @@ import {ExamplePlatformAccessory} from './platformAccessory';
 
 import {CommonDBusClient, DeviceDBusClient} from './dbus';
 import DBus, {MessageBus} from 'dbus-next';
-import {Device} from './dbus/types';
 
 /**
  * HomebridgePlatform

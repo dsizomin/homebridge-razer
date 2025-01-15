@@ -85,6 +85,7 @@ export class ExamplePlatformAccessory {
         callback();
       })
       .catch(err => {
+        this.platform.log.error(err);
         this.isDeviceOn = originalDeviceOn;
         this.deviceBrightness = originalBrightness;
         callback(err);
@@ -123,6 +124,7 @@ export class ExamplePlatformAccessory {
         callback(null);
       })
       .catch(err => {
+        this.platform.log.error(err);
         this.deviceBrightness = originalBrightness;
         this.isDeviceOn = originalIsOn;
         callback(err);
@@ -156,6 +158,7 @@ export class ExamplePlatformAccessory {
         callback(null);
       })
       .catch(err => {
+        this.platform.log.error(err);
         this.deviceHue = originalHue;
         callback(err);
       });
@@ -188,6 +191,7 @@ export class ExamplePlatformAccessory {
         callback(null);
       })
       .catch(err => {
+        this.platform.log.error(err);
         this.deviceSaturation = originalSaturation;
         callback(err);
       });
