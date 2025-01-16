@@ -6,6 +6,8 @@ import {ExamplePlatformAccessory} from './platformAccessory';
 import {CommonDBusClient, DeviceDBusClient} from './dbus';
 import DBus, {MessageBus} from 'dbus-next';
 
+const DBUS_SESSION_BUS_ADDRESS = 'unix:path=/run/user/1000/bus';
+
 /**
  * HomebridgePlatform
  * This class is the main constructor for your plugin, this is where you should
@@ -28,8 +30,10 @@ export class HomebridgeRazerPlugin implements DynamicPlatformPlugin {
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
 
-    this.log.debug('Connecting to DBus at ->', process.env.DBUS_SESSION_BUS_ADDRESS);
-    this.dbus = DBus.sessionBus();
+    this.log.debug('Connecting to DBus at ->', DBUS_SESSION_BUS_ADDRESS);
+    this.dbus = DBus.sessionBus({
+      busAddress: DBUS_SESSION_BUS_ADDRESS,
+    });
     this.dbusClient = new CommonDBusClient(this.dbus);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
